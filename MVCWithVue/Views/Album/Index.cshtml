@@ -1,0 +1,190 @@
+﻿@using Newtonsoft.Json
+@model List<AlbumModel>
+
+@{
+    ViewData["Title"] = "Index";
+    var modelJson = JsonConvert.SerializeObject(Model, Formatting.Indented, new JsonSerializerSettings { StringEscapeHandling = StringEscapeHandling.EscapeHtml, NullValueHandling = NullValueHandling.Ignore });
+}
+
+<input type="hidden" id="model_json" value='@Html.Raw(modelJson)' />
+<div id="app">
+    <div class="row">
+        <div class="col-md-10"><h3>List of Album</h3></div>
+        <div class="col-md-2"><a href="#" class="btn btn-success" v-on:click="showModal"> New ...</a></div>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                @*<th>#</th>*@
+                <th>Date</th>
+                <th>Album Title</th>
+                <th>Artist</th>
+                <th>Released Year</th>
+                <th>Genre</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="alb in albums">
+                <td>{{ format_date(alb.Entered) }}</td>
+                <td>{{ alb.Title }}</td>
+                <td>{{ alb.Artist }}</td>
+                <td>{{ alb.YearReleased }}</td>
+                <td>{{ alb.Genre }}</td>
+                <td>
+                    <a href="#" class="btn btn-danger" v-on:click="removeAlbum(alb,1)">Remove</a>
+                    <a href="#" class="btn btn-primary" v-on:click="editAlbum(alb,1)">Edit</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <partial name="_modals" />
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        $(function () {
+            $('[data-toggle="datepicker"]').datepicker({
+                autoHide: true,
+                zIndex: 2048,
+            });
+        });
+
+        let view = new Vue({
+            el: '#app',
+            data: {
+                albums: [],
+                errors: [],
+                artist: null,
+                title: null,
+                yearreleased: null,
+                genre: null,
+                albclass: null,
+                entered: null,
+                editItemIndex: null,
+                editItemId: null,
+            },
+            created: function () {
+                this.getAlbums();
+            },
+            methods: {
+                clearData: function () {
+                    var vm = this;
+
+                    vm.artist = "";
+                    vm.title = "";
+                    vm.yearreleased = "";
+                    vm.genre = "";
+                    vm.albclass = "";
+                    vm.entered = "";
+                    vm.editItemIndex = null;
+                    vm.editItemId = null;
+                },
+                getAlbums: function () {
+                    var vm = this;
+                    vm.albums = JSON.parse($('#model_json').val());
+                    //$.ajax({ url: "/album", method: "GET" })
+                    //    .done(function (data) {
+                    //        vm.albums = data;
+                    //        console.log(data);
+                    //        toastr.success("All albums loaded.");
+                    //    }).fail(function () {
+                    //        toastr.error("Can not load albums!");
+                    //    });
+                },
+                editAlbum: function (item, index) {
+                    this.artist = item.Artist;
+                    this.title = item.Title;
+                    this.yearreleased = item.YearReleased;
+                    this.genre = item.Genre;
+                    this.albclass = item.albClass;
+                    this.entered = new moment(String(item.Entered)).format('MM/DD/YYYY');
+                    editItemIndex = index;
+                    editItemId = item.AlbumId;
+                    $('#editAlbumModal').modal('show');
+                },
+                editAlbumConfirm: function () {
+                    var vm = this;
+
+                    var newAlbum = {
+                        albumId: editItemId,
+                        artist: vm.artist,
+                        title: vm.title,
+                        yearreleased: vm.yearreleased,
+                        genre: vm.genre,
+                        entered: vm.entered,
+                        albclass: vm.albclass
+                    }
+
+                    $.ajax({ url: "/album", data: newAlbum, method: "PUT" })
+                        .done(function () {
+                            vm.albums[editItemIndex].artist = vm.artist;
+                            vm.albums[editItemIndex].title = vm.title;
+                            vm.albums[editItemIndex].yearreleased = vm.yearreleased;
+                            vm.albums[editItemIndex].genre = vm.genre;
+                            vm.albums[editItemIndex].albclass = vm.albclass;
+                            vm.albums[editItemIndex].entered = vm.entered;
+
+                            toastr.success("Album updated.");
+                        }).fail(function () {
+                            toastr.error("Can not update this album.");
+                        }).always(function () {
+                            vm.clearData();
+                        });
+
+                    $('#editAlbumModal').modal('hide');
+                },
+                removeAlbum: function (item, index) {
+                    var vm = this;
+
+                    var albToDelete = {
+                        albumId: item.AlbumId
+                    }
+
+                    $.ajax({ url: "/album", data: albToDelete, method: "DELETE" })
+                        .done(function (data) {
+                            vm.albums.splice(index, 1);
+                            toastr.success("Album removed");
+                        }).fail(function () {
+                            toastr.error("Can not remove this album!");
+                        });
+                },
+                addAlbum: function () {
+                    var vm = this;
+
+                    var newAlbum = {
+                        Artist: vm.artist,
+                        Title: vm.title,
+                        YearReleased: vm.yearreleased,
+                        Genre: vm.genre,
+                        Entered: vm.entered,
+                        albClass: vm.albclass
+                    }
+
+                    $.ajax({ url: "/album", data: newAlbum, method: "POST" })
+                        .done(function (data) {
+                            vm.albums.splice(0, 0, newAlbum);
+                            toastr.success("New Album added.");
+                        }).fail(function () {
+                            toastr.error("Can not add new album!");
+                        }).always(function () {
+                            vm.clearData();
+                        });
+
+                    $('#newAlbumModal').modal('hide');
+                },
+                showModal: function () {
+                    var vm = this;
+                    $('#newAlbumModal').modal('show');
+                },
+                format_date(value) {
+                    if (value) {
+                        return moment(String(value)).format('MM/DD/YYYY')
+                    }
+                },
+            }
+        });
+    </script>
+}
+

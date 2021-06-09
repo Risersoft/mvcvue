@@ -1,0 +1,179 @@
+﻿@{
+    ViewData["Title"] = "Form Validation";
+}
+<h1>@ViewData["Title"]</h1>
+
+<p>Use this page to detail your site's privacy policy.</p>
+
+<form class="needs-validation" id="validated-form">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="firstName">First name</label>
+            <input type="text" class="form-control" name="firstName" placeholder="" value="" v-model="firstName" required />
+            <span class="text-danger" v-if="validationErrors.firstName" v-text="validationErrors.firstName"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="lastName">Last name</label>
+            <input type="text" class="form-control" name="lastName" placeholder="" value="" v-model="lastName" required />
+            <span class="text-danger" v-if="validationErrors.lastName" v-text="validationErrors.lastName"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="username">Username</label>
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text">@@</span>
+            </div>
+            <input type="text" class="form-control" name="username" placeholder="Username" v-model="username" required />
+            <span class="text-danger" v-if="validationErrors.username" style="width: 100%;" v-text="validationErrors.username"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="email">Email <span class="text-muted">(Optional)</span></label>
+        <input type="email" class="form-control" name="email" placeholder="you@example.com" v-model="email" />
+        <div class="text-danger" v-if="validationErrors.email" style="width: 100%;">
+            <span v-text="validationErrors.email"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label for="address">Address</label>
+        <input type="text" name="address" placeholder="1234 Main St" required="required" class="form-control" />
+        <div class="text-danger" v-if="validationErrors.address" style="width: 100%;">
+            <span v-text="validationErrors.address"></span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5 mb-3">
+            <label for="country">Country</label>
+            <select name="country" required="required" class="custom-select d-block w-100">
+                <option value="">Choose...</option>
+                <option>Nigeria</option>
+            </select>
+            <div class="text-danger" v-if="validationErrors.country" style="width: 100%;">
+                <span v-text="validationErrors.country"></span>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="state">State</label>
+            <select name="state" required="required" class="custom-select d-block w-100">
+                <option value="">Choose...</option>
+                <option>Lagos</option>
+            </select>
+            <div class="text-danger" v-if="validationErrors.state" style="width: 100%;">
+                <span v-text="validationErrors.state"></span>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="zip">Zip</label>
+            <input type="text" name="zip" placeholder="" pattern="[0-9]{7}" title="Enter a valid Nigerian zip code" required="required" class="form-control" />
+            <div class="text-danger" v-if="validationErrors.zip" style="width: 100%;">
+                <span v-text="validationErrors.zip"></span>
+            </div>
+        </div>
+    </div>
+
+    <!--  Rest of form hidden for space    -->
+
+    <button class="btn btn-primary btn-lg btn-block" type="submit"
+            @@click.prevent="submitForm()">
+        SUBMIT
+    </button>
+</form>
+
+@section Scripts{
+    <script type="text/javascript">
+        const vueApp = new Vue({
+            el: '#validated-form',
+            data: function () {
+                return {
+                    validationErrors: {
+                        firstName: null,
+                        lastName: null,
+                        username: null,
+                        email: null,
+                        address: null,
+                        country: null,
+                        state: null,
+                        zip: null,
+                    }
+                }
+            },
+            methods: {
+                submitForm() {
+                    if (this.validateForm()) {
+                        var vm = this;
+                        alert('Form Submitted');
+                        //submit form to backend
+
+                        console.log(vm.firstName);
+                        console.log(vm.lastName);
+                        console.log(vm.username);
+                        console.log(vm.email);
+                    }
+                },
+                validateForm(formId = 'validated-form', errorObjectName = 'validationErrors') {
+                    var nodes = document.querySelectorAll(`#${formId} :invalid`);
+                    var vm = this; //current vue instance;
+
+                    Object.keys(this[errorObjectName]).forEach(key => {
+                        this[errorObjectName][key] = null
+                    });
+
+                    if (nodes.length > 0) {
+                        nodes.forEach(node => {
+                            if (node.title) {
+                                this[errorObjectName][node.name] = node.title;
+                            }
+                            else {
+                                this[errorObjectName][node.name] = node.validationMessage;
+                            }
+
+                            node.addEventListener('change', function (e) {
+                                vm.validateForm(formId, errorObjectName);
+                            });
+                        });
+
+                        return false;
+                    }
+                    else {
+                        return true;
+                    }
+                }
+            }
+        });
+
+                //const apiUrl = 'https://vuecookbook.netlify.com/.netlify/functions/product-name?name=';
+
+                //let view = new Vue({
+                //    el: '#app',
+                //    data: {
+                //        errors: [],
+                //        name: ''
+                //    },
+                //    methods: {
+                //        checkForm: function (e) {
+                //            debugger;
+                //            e.preventDefault();
+                //            this.errors = [];
+                //            if (this.name === '') {
+                //                this.errors.push("Product name is required.");
+                //            } else {
+                //                fetch(apiUrl + encodeURIComponent(this.name))
+                //                    .then(async res => {
+                //                        if (res.status === 204) {
+                //                            alert('Ok!')
+                //                        } else if (res.status === 400) {
+                //                            let errorResponse = await res.json();
+                //                            this.errors.push(errorResponse.error);
+                //                        }
+                //                    });
+                //            }
+                //        }
+                //    }
+                //});
+    </script>
+}
